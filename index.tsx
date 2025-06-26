@@ -511,16 +511,21 @@ function App() {
 
   const currentChainName = chainId ? CHAIN_ID_TO_NAME_MAP[chainId] : null;
 
-  const handleConnectWallet = () => {
-    // Check if the current ID is the placeholder
-    if (IS_PLACEHOLDER_ID) { // Use global IS_PLACEHOLDER_ID
-       alert('WalletConnect is not configured. Please set your Project ID in the code (index.tsx).');
-       return;
+  const handleConnectWallet = async () => {
+    if (IS_PLACEHOLDER_ID) {
+      alert('WalletConnect is not configured. Please set your Project ID in the code (index.tsx).');
+      return;
     }
-    if (walletConnectConnector) {
-      connect({ connector: walletConnectConnector });
+    // Use the first available connector (WalletConnect) if not found by id
+    const connector = walletConnectConnector || connectors[0];
+    if (connector) {
+      try {
+        await connect({ connector });
+      } catch (err) {
+        alert('Failed to connect wallet: ' + (err?.message || err));
+      }
     } else {
-      alert('WalletConnect connector not found. This might be due to an incomplete setup or an invalid Project ID.');
+      alert('No WalletConnect connector found. Please check your wagmi/connectors setup.');
     }
   };
 
@@ -635,7 +640,7 @@ function App() {
             </>
           ) : (
             <>
-              {IS_PLACEHOLDER_ID && ( // Use global IS_PLACEHOLDER_ID
+              {IS_PLACEHOLDER_ID && (
                  <p style={{color: 'red', fontSize: '0.9em', textAlign: 'right', width: '100%', margin: 0}}>
                     Action Required: Configure WalletConnect Project ID in index.tsx
                  </p>
@@ -643,16 +648,16 @@ function App() {
               <button 
                 onClick={handleConnectWallet} 
                 className="button button-primary"
-                disabled={isConnecting || !walletConnectConnector || IS_PLACEHOLDER_ID} // Use global IS_PLACEHOLDER_ID
-                title={IS_PLACEHOLDER_ID ? "WalletConnect Project ID is not set. Please configure it in the code." : "Connect your wallet"} // Use global IS_PLACEHOLDER_ID
+                disabled={isConnecting || IS_PLACEHOLDER_ID}
+                title={IS_PLACEHOLDER_ID ? "WalletConnect Project ID is not set. Please configure it in the code." : "Connect your wallet"}
               >
-                {isConnecting ? 'Connecting...' : (IS_PLACEHOLDER_ID ? 'Setup Required' : 'Connect Wallet')} 
+                {isConnecting ? 'Connecting...' : (IS_PLACEHOLDER_ID ? 'Setup Required' : 'Connect Wallet')}
               </button>
             </>
           )}
         </div>
       </header>
-
+      
       {isConnected && (
         <nav className="app-nav" aria-label="Main navigation">
           <button
@@ -683,9 +688,9 @@ function App() {
         {renderContent()}
       </main>
 
-      <footer className="app-footer">
+      {/* <footer className="app-footer">
         <p>© {new Date().getFullYear()} kaETH true mode. All rights reserved.</p>
-      </footer>
+      </footer> */}
     </div>
   );
 }
